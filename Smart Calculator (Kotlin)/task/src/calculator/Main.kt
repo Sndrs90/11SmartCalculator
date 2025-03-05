@@ -3,6 +3,7 @@ package calculator
 fun main() {
     while (true) {
         val input = readln()
+        val regexCmd = "/\\w*".toRegex()
         when {
             input == "/exit" -> {
                 println("Bye!")
@@ -10,6 +11,10 @@ fun main() {
             }
             input == "/help" -> {
                 println("The program calculates the sum of numbers")
+                continue
+            }
+            regexCmd.matches(input) -> {
+                println("Unknown command")
                 continue
             }
             input.isEmpty() -> continue
@@ -52,10 +57,10 @@ fun parseExp(expression: String): Int {
 }
 
 fun processInput(input: String) {
-    val regex = Regex("^\\s*-?\\d+(\\s*[-+]{1,20}\\s*-?\\d+)*\\s*$")
+    val regex = Regex("^[\\s]*[-+]?\\d+(\\s*[-+]+\\s*[-+]?\\d+)*[\\s]*$")
     if (regex.matches(input)) {
         println(parseExp(input))
     } else {
-        println("Not valid input")
+        println("Invalid expression")
     }
 }
