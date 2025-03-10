@@ -11,11 +11,9 @@ public class Test extends StageTest<String> {
     public List<TestCase<String>> generate() {
         return Arrays.asList(
             new TestCase<String>().setDynamicTesting(() -> {
-
                 TestedProgram main = new TestedProgram();
 
-                // The base test suit that checks if the program
-                // correctly responses to the commands and can stop
+                // tests of functionality of previous steps
                 main.start();
 
                 // test of /help
@@ -33,68 +31,49 @@ public class Test extends StageTest<String> {
                         "The program should not print anything.");
                 }
 
-                // test of /exit
-                output = main.execute("/exit").trim().toLowerCase();
-                if (!output.startsWith("bye")) {
+                // testing basic assignment
+                output = main.execute("n = -32");
+                if (output.length() != 0) {
                     return CheckResult.wrong(
-                        "Your program didn't print \"bye\" after entering \"/exit\".");
-                }
-
-                return new CheckResult(main.isFinished(),
-                    "Your program should exit after entering \"/exit\".");
-            }),
-
-            new TestCase<String>().setDynamicTesting(() -> {
-                TestedProgram main = new TestedProgram();
-
-                // The test suit that checks functionality of the previous steps
-                main.start();
-
-                // sum of positive numbers
-                String output = main.execute("7 + 1 + 4").trim();
-                if (!output.equals("12")) {
-                    return CheckResult.wrong("The program cannot sum more than two numbers.");
-                }
-
-                // sum mixed numbers & negative answer
-                output = main.execute("23 - 17 - 13").trim();
-                if (!output.equals("-7")) {
-                    return CheckResult.wrong(
-                        "Incorrect sum of positive and negative numbers.");
+                        "Unexpected reaction after assignment." +
+                        "The program should not print anything in this case.");
                 }
 
                 // testing a big amount of numbers
-                output = main.execute("33 + 21 + 11 + 49 - 32 - 9 + 1 - 80 + 4").trim();
-                if (!output.equals("-2")) {
+                output = main.execute("33 + 20 + 11 + 49 - 32 - 9 + 1 - 80 + 4").trim();
+                if (!output.equals("-3")) {
                     return CheckResult.wrong(
-                        "The program cannot process a large number of numbers.");
+                        "The program cannot process addition and " +
+                            "subtraction operations correctly.");
                 }
 
-                // input one number
-                output = main.execute("101").trim();
-                if (!output.equals("101")) {
+                // the same with a variable
+                output = main.execute("33 + 20 + 11 + 49 + n - 9 + 1 - 80 + 4").trim();
+                if (!output.equals("-3")) {
                     return CheckResult.wrong(
-                        "The program printed not the same number that was entered " +
-                        "(when one number is entered it is a valid expression).");
+                        "The program cannot process addition and " +
+                            "subtraction operations correctly.");
                 }
 
-                // input one negative number
-                output = main.execute("-302").trim();
-                if (!output.equals("-302")) {
-                    return CheckResult.wrong(
-                        "The program printed not the same number that was entered.");
-                }
 
-                // input empty string
-                output = main.execute("");
+                output = main.execute("c = n \nc = -2");
                 if (output.length() != 0) {
                     return CheckResult.wrong(
-                        "Incorrect response to an empty string. " +
-                        "The program should not print anything.");
+                        "Unexpected reaction after assignment." +
+                        "The program should not print anything in this case.");
+                }
+
+                // check value
+                output = main.execute("  c   ").trim();
+                if (!output.equals("-2")) {
+                    return CheckResult.wrong(
+                        "The variable stores not a correct value." +
+                        "May be the program could not assign the value " +
+                            "of one variable to another one.");
                 }
 
                 // the sum of the numbers is zero
-                output = main.execute("10 - 7 - 3").trim();
+                output = main.execute("11 - 9 + c").trim();
                 if (!output.equals("0")) {
                     return CheckResult.wrong(
                         "The problem when sum is equal to 0 has occurred.");
@@ -108,80 +87,148 @@ public class Test extends StageTest<String> {
                             "with several operators.");
                 }
 
-                // test of /exit
-                output = main.execute("/exit").trim().toLowerCase();
-                if (!output.startsWith("bye")) {
-                    return CheckResult.wrong(
-                        "Your program didn't print \"bye\" after entering \"/exit\".");
-                }
-
-                return new CheckResult(main.isFinished(),
-                    "Your program should exit after entering \"/exit\".");
-            }),
-
-            new TestCase<String>().setDynamicTesting(() -> {
-                TestedProgram main = new TestedProgram();
-
-                // A set of positive tests for this step
-                main.start();
-
-                // tests of invalid expressions
-                String output = main.execute("123+").trim().toLowerCase();
-                if (!output.startsWith("invalid")) {
-                    return CheckResult.wrong(
-                        "The program cannot process an invalid expression.");
-                }
-
-                output = main.execute("321-").trim().toLowerCase();
-                if (!output.startsWith("invalid")) {
-                    return CheckResult.wrong(
-                        "The program cannot process an invalid expression.");
-                }
-
-                // input one number with plus in front of it
-                output = main.execute("+7").trim();
-                if (!output.equals("7")) {
-                    return CheckResult.wrong(
-                        "The program not correctly processes useless plus sign.");
-                }
-
-                // test of /exit
-                output = main.execute("/exit").trim().toLowerCase();
-                if (!output.startsWith("bye")) {
-                    return CheckResult.wrong(
-                        "Your program didn't print \"bye\" after entering \"/exit\".");
-                }
-
-                return new CheckResult(main.isFinished(),
-                    "Your program should exit after entering \"/exit\".");
-            }),
-            new TestCase<String>().setDynamicTesting(() -> {
-                TestedProgram main = new TestedProgram();
-
-                // A set of negative tests for this step
-                main.start();
-
-                // test of entering not numbers
-                String output = main.execute("abc").trim().toLowerCase();
-                if (!output.startsWith("invalid")) {
-                    return CheckResult.wrong(
-                        "The program should print \"Invalid expression\" " +
-                        "when not a numbers are entered");
-                }
-
-                output = main.execute("one + two + three").trim().toLowerCase();
-                if (!output.startsWith("invalid")) {
-                    return CheckResult.wrong(
-                        "The program should print \"Invalid expression\" " +
-                        "when not a numbers are entered.");
-                }
-
                 // test of a nonexistent command
-                output = main.execute("/go").trim().toLowerCase();
+                output = main.execute("/start").trim().toLowerCase();
                 if (!output.startsWith("unknown")) {
                     return CheckResult.wrong(
                         "The program should print \"Unknown command\" " +
                         "when a nonexistent command is entered.");
+                }
+
+                // testing invalid variable name
+                output = main.execute("var1 = 1").trim().toLowerCase();
+                if (!output.startsWith("invalid")) {
+                    return CheckResult.wrong(
+                        "The name of variable should contain only Latin letters.");
+                }
+
+                // testing invalid value
+                output = main.execute("var = 2a").trim().toLowerCase();
+                if (!output.startsWith("invalid")) {
+                    return CheckResult.wrong(
+                        "The value can be an integer number or a value of another variable");
+                }
+
+                // testing multiple equalization
+                output = main.execute("c = 7 - 1 = 5").trim().toLowerCase();
+                if (!output.startsWith("invalid")) {
+                    return CheckResult.wrong(
+                        "The program could not handle a invalid assignment.");
+                }
+
+                // testing assignment by unassigned variable
+                output = main.execute("variable = f").trim().toLowerCase();
+                if (!(output.startsWith("unknown") || output.startsWith("invalid"))) {
+                    return CheckResult.wrong(
+                        "The program should not allow an assignment by unassigned variable.");
+                }
+
+                // checking case sensitivity
+                main.execute("variable = 777");
+                output = main.execute("Variable").trim().toLowerCase();
+                if (!output.startsWith("unknown") && !output.startsWith("invalid")) {
+                    return CheckResult.wrong("The program should be case sensitive.");
+                }
+
+                // test of /exit
+                output = main.execute("/exit").trim().toLowerCase();
+                if (!output.startsWith("bye")) {
+                    return CheckResult.wrong(
+                        "Your program didn't print \"bye\" after entering \"/exit\".");
+                }
+
+                return new CheckResult(main.isFinished(),
+                    "Your program should exit after entering \"/exit\".");
+            }),
+
+            new TestCase<String>().setDynamicTesting(() -> {
+                TestedProgram main = new TestedProgram();
+
+                // A test suit for multiplication and division
+                main.start();
+
+                String output = main.execute("4 * 3").trim();
+                if (!output.equals("12")) {
+                    return CheckResult.wrong(
+                        "The program has problems with multiplication operation.");
+                }
+
+                output = main.execute("91 / 13").trim();
+                if (!output.equals("7")) {
+                    return CheckResult.wrong(
+                        "The program has problems with division operation.");
+                }
+
+                // testing all operators
+                main.execute(" a= 7 \n b =2");
+                output = main.execute("a * 4 / b - (3 - 1)").trim();
+                if (!output.equals("12")) {
+                    return CheckResult.wrong(
+                        "The program cannot correctly process several operations.");
+                }
+
+                // test of /exit
+                output = main.execute("/exit").trim().toLowerCase();
+                if (!output.startsWith("bye")) {
+                    return CheckResult.wrong(
+                        "Your program didn't print \"bye\" after entering \"/exit\".");
+                }
+
+                return new CheckResult(main.isFinished(),
+                    "Your program should exit after entering \"/exit\".");
+            }),
+
+            new TestCase<String>().setDynamicTesting(() -> {
+                TestedProgram main = new TestedProgram();
+
+                // testing priority of parentheses
+                main.start();
+
+                // expression from the example
+                String output = main.execute(
+                    "7 + 3 * ((4 + 3) * 7 + 1) - 6 / (2 + 1)").trim();
+
+                if (!output.equals("155")) {
+                    return CheckResult.wrong(
+                        "The program cannot reproduce an example from the task.");
+                }
+
+                // test of /exit
+                output = main.execute("/exit").trim().toLowerCase();
+                if (!output.startsWith("bye")) {
+                    return CheckResult.wrong(
+                        "Your program didn't print \"bye\" after entering \"/exit\".");
+                }
+
+                return new CheckResult(main.isFinished(),
+                    "Your program should exit after entering \"/exit\".");
+            }),
+            new TestCase<String>().setDynamicTesting(() -> {
+                TestedProgram main = new TestedProgram();
+
+                // a set of negative tests
+                main.start();
+
+                // tests with unclosed brackets
+                String output = main.execute("8 * (2 + 3").trim().toLowerCase();
+                String output1 = main.execute("4 + 5)").trim().toLowerCase();
+                if (!output.startsWith("invalid") || !output1.startsWith("invalid")) {
+                    return CheckResult.wrong(
+                        "The program could not handle an invalid expression.");
+                }
+
+                // sequence of * test
+                output = main.execute("2 ************ 2").trim().toLowerCase();
+                if (!output.startsWith("invalid")) {
+                    return CheckResult.wrong(
+                        "A sequence of \"*\" should return \"Invalid expression\".");
+                }
+
+                // sequence of / test
+                output = main.execute("2 // 2").trim().toLowerCase();
+                if (!output.startsWith("invalid")) {
+                    return CheckResult.wrong(
+                        "A sequence of \"/\" should return \"Invalid expression\".");
                 }
 
                 // test of /exit
