@@ -5,14 +5,13 @@
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="delegatedBuild" value="false" />
-        <option name="distributionType" value="WRAPPED" />
+        <option name="distributionType" value="LOCAL" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/Smart Calculator (Kotlin)/task" />
             <option value="$PROJECT_DIR$/Smart Calculator (Kotlin)/task/build/classes/java" />
-            <option value="$PROJECT_DIR$/Smart Calculator (Kotlin)/task/build/classes/kotlin" />
             <option value="$PROJECT_DIR$/Smart Calculator (Kotlin)/task/build/generated/sources/annotationProcessor/java" />
             <option value="$PROJECT_DIR$/Smart Calculator (Kotlin)/task/build/generated/sources/headers/java" />
             <option value="$PROJECT_DIR$/Smart Calculator (Kotlin)/task/build/reports/tests" />

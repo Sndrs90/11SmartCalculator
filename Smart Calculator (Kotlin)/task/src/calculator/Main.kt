@@ -1,19 +1,25 @@
 package calculator
 
+import java.util.*
+
 fun main() {
     val variablesStorage = mutableMapOf<String, Int>()
     while (true) {
         val input = readln().trim()
-        val regexExp = "[+-]".toRegex()
-        val regexVar = "\\b[a-zA-Z]+(?=\\s*=?)".toRegex()
-        val regCmd = "/+".toRegex()
+        val regexVar = "^[a-zA-Z]+\\s*=\\s*-?\\d+$".toRegex() // For variable assignment with an integer
+        val regexVarAssignWithVar = "^[a-zA-Z]+\\s*=\\s*[a-zA-Z]+$".toRegex() // For variable assignment with another variable
+        val regexRetrieveVar = "^[a-zA-Z]+$".toRegex() // For variable retrieval
+        val regexExp = "([\\d]+|[a-zA-Z]+)(\\s*[-+*/]+\\s*([\\d]+|[a-zA-Z]+))*".toRegex()
+        val regCmd = "^/".toRegex()
+        val regexVarWithNums = "^[a-zA-Z]+\\d+".toRegex()
+        val regexVarAssignWithShit = "^[a-zA-Z]+\\s*=\\s*".toRegex()
         when {
             input == "/exit" -> {
                 println("Bye!")
                 break
             }
             input == "/help" -> {
-                println("The program calculates the sum of numbers")
+                println("The program supports multiplication, division, sum, subtraction of math expressions.")
                 continue
             }
             regCmd.containsMatchIn(input) -> {
@@ -21,12 +27,28 @@ fun main() {
                 continue
             }
             input.isEmpty() -> continue
-            regexExp.containsMatchIn(input) -> {
-                processExpression(input, variablesStorage)
+            regexVar.matches(input) -> {
+                processVar(input, variablesStorage)
                 continue // Continue to the next iteration
             }
-            regexVar.containsMatchIn(input) -> {
+            regexVarAssignWithVar.matches(input) -> {
                 processVar(input, variablesStorage)
+                continue // Continue to the next iteration
+            }
+            regexRetrieveVar.matches(input) -> {
+                processVar(input, variablesStorage)
+                continue // Continue to the next iteration
+            }
+            regexVarWithNums.containsMatchIn(input) -> {
+                processVar(input, variablesStorage)
+                continue
+            }
+            regexVarAssignWithShit.containsMatchIn(input) -> {
+                processVar(input, variablesStorage)
+                continue
+            }
+            regexExp.containsMatchIn(input) -> {
+                processExpressionToPostfix(input, variablesStorage)
                 continue // Continue to the next iteration
             }
         }
@@ -42,36 +64,17 @@ fun normalizeOperators(expression: String): String {
     }.replace(Regex("\\+\\+"), "+") // Normalize any remaining ++ to +
 }
 
-fun parseExp(expression: String): Int {
-    // Normalize the expression by collapsing multiple operators
-    val normalizedExpression = normalizeOperators(expression.trim())
-
-    // Split the expression using regex to match numbers and operators
-    val regex = "([-+]?\\d+)".toRegex()
-    val tokens = regex.findAll(normalizedExpression).map { it.value }.toList()
-    val operators = normalizedExpression.split(regex).filter { it.isNotBlank() }.map { it.trim() }
-
-    // Initialize the result with the first number
-    var result = tokens.first().toInt()
-
-    // Iterate through the tokens starting from the second one
-    for (i in 1 until tokens.size) {
-        val operator = operators[i - 1]  // Get the operator before the number
-        val number = tokens[i].toInt()
-        when (operator) {
-            "+" -> result += number
-            "-" -> result -= number
-        }
+fun processExpressionToPostfix(input: String, variablesStorage: MutableMap<String, Int>) {
+    if (input.count{it == '('} != input.count {it == ')'} || "[*/]{2,}".toRegex().containsMatchIn(input)) {
+        println("Invalid expression")
+        return
     }
-    return result
-}
-
-fun processExpression(input: String, variablesStorage: MutableMap<String, Int>) {
     // Normalize the input expression
-    val normalizedExpression = input.replace("\\s+".toRegex(), " ").trim()
+    val normalizedExp = input.replace("\\s+".toRegex(), " ").trim()
+    val normalizedExpression = normalizeOperators(normalizedExp)
 
     // Split the expression into components while keeping operators
-    val regex = "([-+]?\\d+|[a-zA-Z]+|[-+])".toRegex()
+    val regex = "(\\+|-|\\d*\\.?\\d+|[a-zA-Z_][a-zA-Z0-9_]*|[*/()+-])".toRegex()
     val tokens = regex.findAll(normalizedExpression).map { it.value }.toList()
 
     // Resolve variables and numbers, and create a new list of resolved tokens
@@ -84,29 +87,114 @@ fun processExpression(input: String, variablesStorage: MutableMap<String, Int>) 
         }
     }
 
-    // Now we create a new expression from resolved tokens to pass to the parser
-    val resolvedExpression = resolvedTokens.joinToString(" ")
-    println(parseExp(resolvedExpression))
+    val postfixTokens = mutableListOf<String>()
+    val tokenStack: Stack<String> = Stack()
+
+    // Define operator precedence
+    val precedence = mapOf(
+        "+" to 1,
+        "-" to 1,
+        "*" to 2,
+        "/" to 2
+    )
+
+    for (token in resolvedTokens) {
+        when {
+            token.matches(Regex("-?\\d+")) -> postfixTokens.add(token)  // Numbers go directly to the output
+            token in precedence.keys -> { // Handle operators
+                while (tokenStack.isNotEmpty() && (precedence[tokenStack.peek()] ?: 0) >= precedence[token]!!) {
+                    postfixTokens.add(tokenStack.pop())
+                }
+                tokenStack.push(token)
+            }
+            token == "(" -> tokenStack.push(token) // Push '(' onto the stack
+            token == ")" -> { // Process until matching '('
+                while (tokenStack.isNotEmpty() && tokenStack.peek() != "(") {
+                    postfixTokens.add(tokenStack.pop())
+                }
+                tokenStack.pop() // Pop the '(' from the stack
+            }
+        }
+    }
+
+    // Pop all the remaining operators in the stack
+    while (tokenStack.isNotEmpty()) {
+        postfixTokens.add(tokenStack.pop())
+    }
+
+    val postfixExpression = postfixTokens.joinToString(" ")
+//    println(postfixExpression)
+    println(countPostfixExpression(postfixExpression))
+}
+
+fun countPostfixExpression(postfixExpression: String): String {
+    // Split the expression into components while keeping operators
+    val regex = "([-+]?\\d+|[a-zA-Z]+|[*/()+-])".toRegex()
+    val tokens = regex.findAll(postfixExpression).map { it.value }.toList()
+    var result: Int
+    val postfixStack: Stack<String> = Stack()
+    for (token in tokens) {
+        when {
+            token.matches(Regex("-?\\d+")) -> postfixStack.push(token)
+            token.matches(Regex("[*/+-]")) -> {
+                val num2 = postfixStack.pop().toInt()
+                val num1 = postfixStack.pop().toInt()
+                result = when (token) {
+                    "*" -> num1 * num2
+                    "/" -> num1 / num2
+                    "+" -> num1 + num2
+                    "-" -> num1 - num2
+                    else -> 0
+                }
+                postfixStack.push(result.toString())
+            }
+        }
+    }
+    return postfixStack.pop()
 }
 
 fun processVar(input: String, variablesStorage: MutableMap<String, Int>) {
     when {
-        // Match a variable assignment with an integer
-        "[a-zA-Z]+\\s*=\\s*\\d+".toRegex().matches(input) -> {
-            val partsVar = input.replace("\\s".toRegex(), "").split("=")
-            variablesStorage[partsVar[0]] = partsVar[1].toInt()
-        }
-        // Match a variable assignment with another variable
-        "[a-zA-Z]+\\s*=\\s*[a-zA-Z]+".toRegex().matches(input) -> {
-            val partsVar = input.replace("\\s".toRegex(), "").split("=")
-            val sourceVar = partsVar[1]
-            if (variablesStorage.containsKey(sourceVar)) {
-                variablesStorage[partsVar[0]] = variablesStorage[sourceVar]!!
+        "[a-zA-Z]+\\s*=\\s*-?\\d+".toRegex().matches(input) -> {
+            val partsVar = input.split("=").map { it.trim() }
+            if (partsVar.size == 2) {
+                val variableName = partsVar[0]
+                val valueString = partsVar[1]
+
+                // Check if variable name contains only letters
+                if (variableName.all { it.isLetter() }) {
+                    try {
+                        val value = valueString.toInt()
+                        variablesStorage[variableName] = value
+                    } catch (e: NumberFormatException) {
+                        println("Invalid assignment")
+                    }
+                } else {
+                    println("Invalid variable name")
+                }
             } else {
-                println("Unknown variable")
+                println("Invalid assignment")
             }
         }
-        // Match a variable name retrieval
+        "[a-zA-Z]+\\s*=\\s*[a-zA-Z]+".toRegex().matches(input) -> {
+            val partsVar = input.split("=").map { it.trim() }
+            if (partsVar.size == 2) {
+                val sourceVar = partsVar[1]
+                // Check if variable names contain only letters
+                if (partsVar[0].all { it.isLetter() } && sourceVar.all { it.isLetter() }) {
+                    if (variablesStorage.containsKey(sourceVar)) {
+                        variablesStorage[partsVar[0]] = variablesStorage[sourceVar]!!
+                    } else {
+                        println("Unknown variable")
+                    }
+                } else {
+                    println("Invalid variable name")
+                }
+            } else {
+                println("Invalid assignment")
+            }
+        }
+
         "[a-zA-Z]+".toRegex().matches(input) -> {
             if (variablesStorage.containsKey(input)) {
                 println(variablesStorage[input])
@@ -114,11 +202,9 @@ fun processVar(input: String, variablesStorage: MutableMap<String, Int>) {
                 println("Unknown variable")
             }
         }
-
         "[a-zA-Z]+\\s*=\\s*".toRegex().containsMatchIn(input) -> {
             println("Invalid assignment")
         }
-        // If none of the patterns match, you can optionally handle it
         else -> {
             println("Invalid identifier")
         }
