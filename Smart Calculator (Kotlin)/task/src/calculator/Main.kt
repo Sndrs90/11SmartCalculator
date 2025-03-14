@@ -1,9 +1,10 @@
 package calculator
 
+import java.math.BigInteger
 import java.util.*
 
 fun main() {
-    val variablesStorage = mutableMapOf<String, Int>()
+    val variablesStorage = mutableMapOf<String, BigInteger>()
     while (true) {
         val input = readln().trim()
         val regexVar = "^[a-zA-Z]+\\s*=\\s*-?\\d+$".toRegex() // For variable assignment with an integer
@@ -64,7 +65,7 @@ fun normalizeOperators(expression: String): String {
     }.replace(Regex("\\+\\+"), "+") // Normalize any remaining ++ to +
 }
 
-fun processExpressionToPostfix(input: String, variablesStorage: MutableMap<String, Int>) {
+fun processExpressionToPostfix(input: String, variablesStorage: MutableMap<String, BigInteger>) {
     if (input.count{it == '('} != input.count {it == ')'} || "[*/]{2,}".toRegex().containsMatchIn(input)) {
         println("Invalid expression")
         return
@@ -131,20 +132,20 @@ fun countPostfixExpression(postfixExpression: String): String {
     // Split the expression into components while keeping operators
     val regex = "([-+]?\\d+|[a-zA-Z]+|[*/()+-])".toRegex()
     val tokens = regex.findAll(postfixExpression).map { it.value }.toList()
-    var result: Int
+    var result: BigInteger
     val postfixStack: Stack<String> = Stack()
     for (token in tokens) {
         when {
             token.matches(Regex("-?\\d+")) -> postfixStack.push(token)
             token.matches(Regex("[*/+-]")) -> {
-                val num2 = postfixStack.pop().toInt()
-                val num1 = postfixStack.pop().toInt()
+                val num2 = postfixStack.pop().toBigInteger()
+                val num1 = postfixStack.pop().toBigInteger()
                 result = when (token) {
                     "*" -> num1 * num2
                     "/" -> num1 / num2
                     "+" -> num1 + num2
                     "-" -> num1 - num2
-                    else -> 0
+                    else -> BigInteger.ZERO
                 }
                 postfixStack.push(result.toString())
             }
@@ -153,7 +154,7 @@ fun countPostfixExpression(postfixExpression: String): String {
     return postfixStack.pop()
 }
 
-fun processVar(input: String, variablesStorage: MutableMap<String, Int>) {
+fun processVar(input: String, variablesStorage: MutableMap<String, BigInteger>) {
     when {
         "[a-zA-Z]+\\s*=\\s*-?\\d+".toRegex().matches(input) -> {
             val partsVar = input.split("=").map { it.trim() }
@@ -164,7 +165,7 @@ fun processVar(input: String, variablesStorage: MutableMap<String, Int>) {
                 // Check if variable name contains only letters
                 if (variableName.all { it.isLetter() }) {
                     try {
-                        val value = valueString.toInt()
+                        val value = valueString.toBigInteger()
                         variablesStorage[variableName] = value
                     } catch (e: NumberFormatException) {
                         println("Invalid assignment")
